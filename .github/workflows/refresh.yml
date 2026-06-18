@@ -1,0 +1,26 @@
+name: Refresh Pulse Bharat Radio
+
+# Rebuilds the on-air program from the latest tech/AI feed. Each run re-uses
+# cached audio for unchanged stories, so only genuinely new segments cost an
+# Azure Speech synth call — comfortably inside the free tier.
+
+on:
+  schedule:
+    - cron: "20 */3 * * *"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  refresh:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Trigger program refresh
+        run: |
+          code=$(curl -s -m 230 -o /tmp/refresh.json -w "%{http_code}" \
+            "https://radio.pulsebharat.com/api/refresh?key=${{ secrets.REFRESH_KEY }}")
+          echo "HTTP $code"
+          cat /tmp/refresh.json || true
+          echo
+          test "$code" = "200"

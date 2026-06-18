@@ -1,0 +1,22 @@
+{
+  "navigationFallback": {
+    "rewrite": "/index.html",
+    "exclude": ["/api/*", "/*.{css,js,svg,png,ico,webmanifest,mp3,json,txt}"]
+  },
+  "mimeTypes": {
+    ".webmanifest": "application/manifest+json",
+    ".svg": "image/svg+xml",
+    ".json": "application/json"
+  },
+  "routes": [
+    { "route": "/api/audio/*", "headers": { "Cache-Control": "public, max-age=2592000, immutable" } },
+    { "route": "/api/playlist", "headers": { "Cache-Control": "public, max-age=60" } }
+  ],
+  "responseOverrides": {
+    "404": { "rewrite": "/index.html" }
+  },
+  "globalHeaders": {
+    "X-Content-Type-Options": "nosniff",
+    "Referrer-Policy": "strict-origin-when-cross-origin"
+  }
+}

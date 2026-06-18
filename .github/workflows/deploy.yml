@@ -1,0 +1,42 @@
+name: Deploy Pulse Bharat Radio
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: deploy
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Deploy to Azure Static Web Apps (radio.pulsebharat.com)
+        uses: Azure/static-web-apps-deploy@v1
+        with:
+          azure_static_web_apps_api_token: ${{ secrets.AZURE_SWA_DEPLOY_TOKEN }}
+          action: upload
+          app_location: public
+          api_location: api
+          output_location: ""
+          skip_app_build: true
+
+  warm:
+    needs: deploy
+    runs-on: ubuntu-latest
+    steps:
+      - name: Build the first program after deploy
+        run: |
+          sleep 45
+          code=$(curl -s -m 230 -o /tmp/r.json -w "%{http_code}" \
+            "https://radio.pulsebharat.com/api/refresh?key=${{ secrets.REFRESH_KEY }}" || true)
+          echo "HTTP ${code:-none}"; cat /tmp/r.json 2>/dev/null || true; echo
+          # Non-fatal: the custom domain may not be wired on the very first deploy.
+          test "$code" = "200" || echo "warm skipped (domain not ready yet)"

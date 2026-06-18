@@ -1,0 +1,9 @@
+{
+  "name": "pulse-bharat-radio-api",
+  "version": "1.0.0",
+  "description": "Azure Functions backend for Pulse Bharat Radio (radio.pulsebharat.com) — a 24x7 Hindi news station.",
+  "main": "playlist/index.js",
+  "dependencies": {
+    "@azure/storage-blob": "^12.17.0"
+  }
+}

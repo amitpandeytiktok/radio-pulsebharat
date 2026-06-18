@@ -1,0 +1,107 @@
+<!doctype html>
+<html lang="hi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Pulse Bharat Radio · हिंदी न्यूज़ रेडियो · 24×7</title>
+<meta name="description" content="Pulse Bharat Radio — भारत की हर बड़ी खबर, एक news anchor की आवाज़ में, चौबीसों घंटे। देश-दुनिया के newsroom से ताज़ा खबरें, हिंदी में।">
+<meta name="theme-color" content="#07070d">
+<link rel="icon" href="/icon.svg" type="image/svg+xml">
+<link rel="manifest" href="/manifest.webmanifest">
+<meta property="og:title" content="Pulse Bharat Radio · हिंदी न्यूज़ रेडियो">
+<meta property="og:description" content="भारत की हर बड़ी खबर, एक news anchor की आवाज़ में — 24×7, हिंदी में।">
+<meta property="og:type" content="website">
+<meta property="og:url" content="https://radio.pulsebharat.com/">
+<meta property="og:image" content="https://radio.pulsebharat.com/og.svg">
+<meta name="twitter:card" content="summary_large_image">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Devanagari:wght@400;500;600;700&family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/style.css">
+</head>
+<body>
+
+<!-- Tune-in gate (browser autoplay needs a user gesture) -->
+<div class="gate" id="gate">
+  <div>
+    <div class="ring">
+      <svg viewBox="0 0 24 24"><path d="M12 3a9 9 0 0 0-9 9v5a3 3 0 0 0 3 3h2v-7H5v-1a7 7 0 0 1 14 0v1h-3v7h2a3 3 0 0 0 3-3v-5a9 9 0 0 0-9-9z"/></svg>
+    </div>
+    <h1 class="big"><span class="accent">Pulse</span> Bharat Radio</h1>
+    <div class="tl">भारत की धड़कन · हर बड़ी खबर · हिंदी में</div>
+    <button class="tune" id="tuneBtn">
+      <svg viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>
+      सुनना शुरू करें
+    </button>
+    <div class="hint" id="gateHint">Live program तैयार किया जा रहा है…</div>
+  </div>
+</div>
+
+<div class="wrap">
+  <div class="top">
+    <div class="logo">
+      <span class="dot"></span>
+      <div>
+        <b>Pulse Bharat Radio</b>
+        <div class="sub">भारत की हर खबर · हिंदी में · 24×7</div>
+      </div>
+    </div>
+    <div class="spacer"></div>
+    <div class="onair off" id="onair"><span class="live"></span> <span id="onairText">OFF AIR</span></div>
+  </div>
+
+  <!-- Now playing console -->
+  <section class="console">
+    <div class="np-meta">
+      <span class="tag station" id="npTag">Pulse Bharat Radio</span>
+      <span class="beat" id="npBeat"></span>
+    </div>
+    <div class="np-hi" id="npHi">रेडियो ट्यून हो रहा है…</div>
+    <div class="np-en" id="npEn"></div>
+
+    <div class="eq" id="eq" aria-hidden="true">
+      <i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i>
+    </div>
+    <div class="scrub"><i id="scrub"></i></div>
+
+    <div class="np-src" id="npSrc"></div>
+    <div class="caption" id="npCaption" hidden></div>
+
+    <div class="transport">
+      <button class="btn" id="prevBtn" title="पिछला" aria-label="पिछला">
+        <svg viewBox="0 0 24 24"><path d="M6 6h2v12H6zm3.5 6l8.5 6V6z"/></svg>
+      </button>
+      <button class="btn play" id="playBtn" title="चलाएँ / रोकें" aria-label="चलाएँ या रोकें">
+        <svg id="playIcon" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>
+      </button>
+      <button class="btn" id="nextBtn" title="अगला" aria-label="अगला">
+        <svg viewBox="0 0 24 24"><path d="M16 6h2v12h-2zM6 6l8.5 6L6 18z"/></svg>
+      </button>
+      <div class="vol">
+        <svg viewBox="0 0 24 24" width="18" height="18" fill="currentColor"><path d="M5 9v6h4l5 5V4L9 9H5zm11.5 3a4.5 4.5 0 0 0-2.5-4v8a4.5 4.5 0 0 0 2.5-4z"/></svg>
+        <input type="range" id="vol" min="0" max="1" step="0.01" value="1" aria-label="आवाज़">
+      </div>
+    </div>
+
+    <div class="subline">
+      <span>आवाज़: <b id="metaVoice">—</b></span>
+      <span>प्रोग्राम: <b id="metaCount">—</b> सेगमेंट</span>
+      <span id="metaUpdated"></span>
+    </div>
+  </section>
+
+  <div class="section-h">अगला प्रसारण <span class="ln"></span> <span id="queueLen"></span></div>
+  <div class="queue" id="queue"></div>
+
+  <div class="foot">
+    एक ही धारा में देश-दुनिया की पूरी खबर — feed <a href="https://pulsebharat.com" target="_blank" rel="noopener">Pulse Bharat</a> से, आवाज़ Azure Neural से।<br>
+    <a href="https://pulsebharat.com" target="_blank" rel="noopener">pulsebharat.com</a> · radio.pulsebharat.com
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+<audio id="audio" preload="auto" crossorigin="anonymous"></audio>
+
+<script src="/app.js"></script>
+</body>
+</html>

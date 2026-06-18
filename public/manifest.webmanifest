@@ -1,0 +1,13 @@
+{
+  "name": "Pulse Bharat Radio",
+  "short_name": "Pulse Bharat Radio",
+  "description": "भारत की हर बड़ी खबर, एक news anchor की आवाज़ में — 24×7।",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#07070d",
+  "theme_color": "#07070d",
+  "lang": "hi",
+  "icons": [
+    { "src": "/icon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any maskable" }
+  ]
+}
