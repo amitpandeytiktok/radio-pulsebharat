@@ -220,6 +220,26 @@ async function buildProgram(opts = {}) {
     totalDurationMs: segments.reduce((a, s) => a + (s.durationMs || 0), 0),
     segments,
   };
+
+  // Anti-regression: if F0 is throttled this run, we may air fewer stories than a
+  // previous, still-fresh program. Don't let a sparser partial overwrite a fuller
+  // recent one on air — the just-synthesised clips are already in the blob cache,
+  // so the next (rested) build reassembles the fuller set instantly. We only keep
+  // the old program when it is meaningfully fuller and still fresh (< KEEP_FRESH).
+  const KEEP_FRESH_MS = 6 * 60 * 60 * 1000;
+  if (program.partial) {
+    try {
+      const prev = await store.readProgram();
+      if (prev && Array.isArray(prev.segments) && (prev.aired || 0) > aired) {
+        const prevAgeMs = Date.now() - new Date(prev.updatedAt || 0).getTime();
+        if (prevAgeMs >= 0 && prevAgeMs < KEEP_FRESH_MS) {
+          log(`keeping previous fuller program on air (${prev.aired} aired, ${Math.round(prevAgeMs / 60000)}m old) over this partial (${aired}); ${made} new clips cached for next build`);
+          return prev;
+        }
+      }
+    } catch (e) { /* no previous program — write the new one */ }
+  }
+
   await store.writeProgram(program);
   log(`program: ${segments.length} segs · ${aired} aired · ${pending} warming · ${made} new synths · ${Math.round(program.totalDurationMs / 1000)}s${program.partial ? ' (partial)' : ''}`);
   return program;
