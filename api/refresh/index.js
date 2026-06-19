@@ -19,6 +19,9 @@ module.exports = async function (context, req) {
       headers: { 'Content-Type': 'application/json; charset=utf-8', 'Cache-Control': 'no-store' },
       body: JSON.stringify({
         ok: true,
+        partial: !!program.partial,
+        aired: program.aired,
+        pending: program.pending,
         segments: program.count,
         totalDurationMs: program.totalDurationMs,
         newsUpdatedAt: program.newsUpdatedAt,
