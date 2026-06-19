@@ -99,7 +99,7 @@
           '<div class="sub" id="sub"></div>' +
           '<div class="bar"><i id="prog"></i></div>' +
           '<div class="ctl">' +
-            '<button class="play" id="play" aria-label="Play/Pause"><svg id="playIc" width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg></button>' +
+            '<button class="play" id="play" aria-label="Play/Pause"><svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path id="playIc" d="M8 5v14l11-7z"/></svg></button>' +
             '<button class="skip" id="next" aria-label="Next" title="Next"><svg width="17" height="17" viewBox="0 0 24 24" fill="currentColor"><path d="M6 18l8.5-6L6 6v12zM16 6v12h2V6h-2z"/></svg></button>' +
             '<input class="vol" id="vol" type="range" min="0" max="1" step="0.05" value="1" aria-label="Volume">' +
           '</div>' +
