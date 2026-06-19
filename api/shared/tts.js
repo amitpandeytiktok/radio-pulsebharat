@@ -25,12 +25,13 @@ const SPEECH_REGION = process.env.SPEECH_REGION || 'eastus2';
 const AUDIO_FORMAT = 'audio-24khz-48kbitrate-mono-mp3';
 const CBR_BYTES_PER_MS = 6;
 
-// The F0 free tier only allows a short burst of synth calls (~20 / 60s) before
-// it returns 429 "Quota Exceeded". Serialise and pace non-cached REST calls, and
-// retry a throttled call with backoff, so a cold build self-throttles instead of
-// failing. Cached refreshes never reach the REST call, so they stay fast.
-const MIN_SYNTH_INTERVAL_MS = parseInt(process.env.TTS_MIN_INTERVAL_MS || '3200', 10);
-const MAX_SYNTH_RETRIES = parseInt(process.env.TTS_MAX_RETRIES || '4', 10);
+// The F0 free tier rate-limits synthesis (~20 calls/60s) and the SWA gateway
+// caps a request at ~45s, so the program builder bounds how many NEW clips it
+// voices per build. Here we only lightly smooth bursts (serialise + a small gap)
+// and retry a throttled (429) call with short backoff. Cached refreshes never
+// reach the REST call, so they stay fast.
+const MIN_SYNTH_INTERVAL_MS = parseInt(process.env.TTS_MIN_INTERVAL_MS || '250', 10);
+const MAX_SYNTH_RETRIES = parseInt(process.env.TTS_MAX_RETRIES || '3', 10);
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 let _synthChain = Promise.resolve();
 let _lastSynthAt = 0;
@@ -102,7 +103,7 @@ async function speakWithRetry(ssml) {
     } catch (e) {
       const throttled = e && (e.status === 429 || /\b429\b|quota|throttl/i.test(e.message || ''));
       if (!throttled || attempt >= MAX_SYNTH_RETRIES) throw e;
-      const backoff = Math.max(e.retryAfterMs || 0, Math.min(20000, 3000 * Math.pow(2, attempt))) + Math.floor(Math.random() * 400);
+      const backoff = Math.max(e.retryAfterMs || 0, Math.min(8000, 1500 * Math.pow(2, attempt))) + Math.floor(Math.random() * 400);
       await sleep(backoff);
     }
   }
