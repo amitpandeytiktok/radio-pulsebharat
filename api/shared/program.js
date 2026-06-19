@@ -5,18 +5,18 @@
 // cheap), synthesises audio, and assembles the on-air playlist manifest
 // (<prefix>program.json):
 //
-//   ident → story → … → sign-off   (the player loops the whole thing)
+//   ident → story → …   (the player loops the whole thing)
 //
 // Env:
 //   NEWS_API       feed URL; default https://pulsebharat.com/api/news
-//   RADIO_STORIES  how many stories per program; default 12
+//   RADIO_STORIES  how many stories per program; default 28
 
 const store = require('./store');
 const tts = require('./tts');
 const { rjLine, sanitize, BUMPERS, CAT_LEAD, pick } = require('./script');
 
 const NEWS_API = process.env.NEWS_API || 'https://pulsebharat.com/api/news';
-const N_STORIES = Math.max(4, Math.min(24, parseInt(process.env.RADIO_STORIES || '12', 10)));
+const N_STORIES = Math.max(4, Math.min(40, parseInt(process.env.RADIO_STORIES || '28', 10)));
 const LINES_BLOB = store.PREFIX + 'lines.json';
 const LINE_TTL_MS = 24 * 60 * 60 * 1000;
 const STORY_TAIL_MS = 900;
@@ -184,9 +184,6 @@ async function buildProgram(opts = {}) {
     aired++;
     log(`  [${aired}] ${seg.cached ? 'cached' : 'synth '} ${Math.round(seg.durationMs / 1000)}s · ${(s.title || '').slice(0, 55)}`);
   }
-
-  const signoff = await ensureSeg('signoff', pick(BUMPERS.signoff, hourSeed), { title: STATION });
-  if (signoff) segments.push(signoff);
 
   // Persist the line cache (pruned to current stories) on every run — including
   // partial ones — so the spoken text stays stable and later refreshes converge.

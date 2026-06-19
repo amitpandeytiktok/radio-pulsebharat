@@ -15,7 +15,7 @@ feed (`good` / `bad` / `ugly`), turned into on-air radio.
    (fallback = a clean templated line from the story's own Hindi title).
 3. **Voice** — Azure Speech Neural TTS (`hi-IN-MadhurNeural`) renders each segment
    to a CBR MP3, hash-cached in blob so unchanged stories never re-synthesise.
-4. **Program** — `ident → [segue] story → … → sign-off`, persisted as a manifest.
+4. **Program** — `ident → story → …`, persisted as a filler-free manifest.
 5. **Player** — a continuous looping web player (ON AIR indicator, now-playing
    console, up-next queue, read-the-story links), Hindi-first UI.
 6. **Refresh** — a GitHub Action cron (~every 3h) rebuilds the program from the
@@ -46,6 +46,6 @@ Azure Static Web App **`radio-pulsebharat`** (Free, `lms-rg`), custom domain
 | `REFRESH_KEY` | Guards `/api/refresh` |
 | `RADIO_VOICE` | Optional; default `hi-IN-MadhurNeural` |
 | `NEWS_API` | Optional; default `https://pulsebharat.com/api/news` |
-| `RADIO_STORIES` | Optional; stories per program (default 12) |
+| `RADIO_STORIES` | Optional; stories per program (default 28) |
 
 Built on the same engine as TechWave Radio and The Mudda Radio.
