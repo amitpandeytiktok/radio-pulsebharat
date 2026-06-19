@@ -38,8 +38,8 @@ function sanitize(line) {
 function fallbackLine(story) {
   const t = sanitize(story.titleHi || story.title || '');
   const src = sanitize(story.source || '');
-  if (!t) return 'अगली खबर — भारत और दुनिया से।';
-  return src ? `अगली खबर — ${t}। ये report ${src} से है।` : `अगली खबर — ${t}।`;
+  if (!t) return 'भारत और दुनिया से एक और खबर।';
+  return src ? `${t}। ये report ${src} से है।` : `${t}।`;
 }
 
 /**
@@ -69,20 +69,15 @@ async function rjLine(story) {
   }
 }
 
-// Pre-written station bumpers (no LLM). Idents open the hour, segues bridge
-// stories, the sign-off plays just before the loop restarts.
+// Pre-written station bumpers (no LLM). Idents open the hour, and the sign-off
+// plays just before the loop restarts.
 const BUMPERS = {
   ident: [
     'ये है Pulse Bharat Radio — भारत की हर बड़ी खबर, चौबीसों घंटे, हिंदी में। चलिए शुरू करते हैं।',
     'आप सुन रहे हैं Pulse Bharat Radio, जहाँ देश की धड़कन सबसे पहले, सबसे साफ़।',
     'Pulse Bharat Radio — कश्मीर से कन्याकुमारी तक, हर ज़रूरी खबर सीधे आपके कानों तक।',
   ],
-  segue: [
-    'चलिए, अगली खबर की ओर।',
-    'और अब, देश-दुनिया से एक और update।',
-    'रुकिए मत — खबरें जारी हैं।',
-    'आगे बढ़ते हैं, ये भी सुन लीजिए।',
-  ],
+  segue: [],
   signoff: [
     'फ़िलहाल इतनी खबरें — Pulse Bharat Radio पर बने रहिए, हम लौटते हैं और भी updates के साथ।',
     'ये थीं अभी तक की बड़ी खबरें। Pulse Bharat Radio, हमेशा आपके साथ — सुनते रहिए।',
@@ -91,9 +86,9 @@ const BUMPERS = {
 
 // Light category lead-ins so good/bad/ugly stories carry the right tone.
 const CAT_LEAD = {
-  good: 'एक अच्छी खबर — ',
-  bad: 'अब एक चिंता वाली खबर — ',
-  ugly: 'और ये रही दिन की एक गंभीर खबर — ',
+  good: '',
+  bad: '',
+  ugly: '',
 };
 
 function pick(arr, seed) {

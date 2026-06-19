@@ -42,18 +42,22 @@ function ssmlEscape(s) {
   }[c]));
 }
 
-function buildSsml(text, voice, rate) {
+function buildSsml(text, voice, rate, tailMs) {
   const v = voice || VOICE_DEFAULT;
   const r = rate || RATE_DEFAULT;
+  const tail = Math.max(0, (tailMs == null ? 350 : tailMs) | 0);
   const body = ssmlEscape(text);
   const inner = (r && r !== '0%') ? `<prosody rate="${r}">${body}</prosody>` : body;
+  const brk = tail > 0 ? `<break time="${tail}ms"/>` : '';
   return `<speak version="1.0" xmlns="http://www.w3.org/2001/10/synthesis" xml:lang="hi-IN">` +
-    `<voice name="${v}">${inner}<break time="350ms"/></voice></speak>`;
+    `<voice name="${v}">${inner}${brk}</voice></speak>`;
 }
 
-function clipName(text, voice) {
+function clipName(text, voice, tailMs) {
   const v = voice || VOICE_DEFAULT;
-  return crypto.createHash('sha1').update(`${v}|${RATE_DEFAULT}|${text}`).digest('hex').slice(0, 24);
+  const tail = (tailMs == null ? 350 : tailMs) | 0;
+  const tailPart = tail === 350 ? '' : `|t${tail}`;
+  return crypto.createHash('sha1').update(`${v}|${RATE_DEFAULT}|${text}${tailPart}`).digest('hex').slice(0, 24);
 }
 
 function durationFromBytes(bytes) {
@@ -128,16 +132,17 @@ function pacedSpeak(ssml) {
  */
 async function speak(text, opts = {}) {
   const voice = opts.voice || VOICE_DEFAULT;
+  const tailMs = opts.tailMs;
   const clean = String(text || '').trim();
   if (!clean) throw new Error('empty tts text');
-  const name = clipName(clean, voice);
+  const name = clipName(clean, voice, tailMs);
 
   const info = await audioInfo(name);
   if (info.exists && info.size > 0) {
     return { audio: `/api/audio/${name}.mp3`, durationMs: durationFromBytes(info.size), bytes: info.size, voice, cached: true, name };
   }
 
-  const mp3 = await pacedSpeak(buildSsml(clean, voice, opts.rate));
+  const mp3 = await pacedSpeak(buildSsml(clean, voice, opts.rate, tailMs));
   const url = await uploadAudio(name, mp3);
   return { audio: url, durationMs: durationFromBytes(mp3.length), bytes: mp3.length, voice, cached: false, name };
 }

@@ -5,7 +5,7 @@
 // cheap), synthesises audio, and assembles the on-air playlist manifest
 // (<prefix>program.json):
 //
-//   ident → [segue] story → … → sign-off   (the player loops the whole thing)
+//   ident → story → … → sign-off   (the player loops the whole thing)
 //
 // Env:
 //   NEWS_API       feed URL; default https://pulsebharat.com/api/news
@@ -19,6 +19,7 @@ const NEWS_API = process.env.NEWS_API || 'https://pulsebharat.com/api/news';
 const N_STORIES = Math.max(4, Math.min(24, parseInt(process.env.RADIO_STORIES || '12', 10)));
 const LINES_BLOB = store.PREFIX + 'lines.json';
 const LINE_TTL_MS = 24 * 60 * 60 * 1000;
+const STORY_TAIL_MS = 900;
 const STATION = 'Pulse Bharat Radio';
 const TAGLINE = 'भारत की धड़कन · हर बड़ी खबर · हिंदी में, चौबीसों घंटे';
 
@@ -138,10 +139,10 @@ async function buildProgram(opts = {}) {
   // Voice one segment, or reuse its cached clip. Never throws and never exceeds
   // the per-run synth cap / time budget — over the limit it returns null so the
   // caller can skip the segment (a later refresh fills it in).
-  async function ensureSeg(kind, text, meta = {}) {
+  async function ensureSeg(kind, text, meta = {}, tailMs) {
     const clean = String(text || '').trim();
     if (!clean) return null;
-    const name = tts.clipName(clean, tts.VOICE_DEFAULT);
+    const name = tts.clipName(clean, tts.VOICE_DEFAULT, tailMs);
     let cached = false;
     try {
       const info = await store.audioInfo(name);
@@ -149,7 +150,7 @@ async function buildProgram(opts = {}) {
     } catch (e) { /* treat as not cached */ }
     if (!cached && (made >= maxNew || overBudget())) { budgetHit = true; return null; }
     try {
-      const out = await tts.speak(clean);
+      const out = await tts.speak(clean, { tailMs });
       if (!out.cached) made++;
       return shapeSeg(kind, out, clean, meta);
     } catch (e) {
@@ -166,11 +167,8 @@ async function buildProgram(opts = {}) {
   const ident = await ensureSeg('ident', pick(BUMPERS.ident, hourSeed), { title: STATION });
   if (ident) segments.push(ident);
 
-  // Stage segues so we never emit one that isn't followed by a real story.
-  let stagedSegue = null;
   for (let i = 0; i < stories.length; i++) {
     const s = stories[i];
-    if (i > 0 && i % 3 === 0) stagedSegue = pick(BUMPERS.segue, hourSeed + i);
     // Always (re)generate + cache the line so the spoken text stays stable.
     const spoken = sanitize(leadIn(s) + (await lineFor(s, lines)));
     const seg = await ensureSeg('story', spoken, {
@@ -180,13 +178,8 @@ async function buildProgram(opts = {}) {
       source: s.source || '',
       link: s.link || '',
       beat: s.beat || '',
-    });
+    }, STORY_TAIL_MS);
     if (!seg) { pending++; log(`  … warming · ${(s.title || '').slice(0, 55)}`); continue; }
-    if (stagedSegue) {
-      const segue = await ensureSeg('segue', stagedSegue, { title: STATION });
-      if (segue) segments.push(segue);
-      stagedSegue = null;
-    }
     segments.push(seg);
     aired++;
     log(`  [${aired}] ${seg.cached ? 'cached' : 'synth '} ${Math.round(seg.durationMs / 1000)}s · ${(s.title || '').slice(0, 55)}`);
