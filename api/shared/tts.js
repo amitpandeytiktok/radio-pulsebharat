@@ -25,6 +25,16 @@ const SPEECH_REGION = process.env.SPEECH_REGION || 'eastus2';
 const AUDIO_FORMAT = 'audio-24khz-48kbitrate-mono-mp3';
 const CBR_BYTES_PER_MS = 6;
 
+// The F0 free tier only allows a short burst of synth calls (~20 / 60s) before
+// it returns 429 "Quota Exceeded". Serialise and pace non-cached REST calls, and
+// retry a throttled call with backoff, so a cold build self-throttles instead of
+// failing. Cached refreshes never reach the REST call, so they stay fast.
+const MIN_SYNTH_INTERVAL_MS = parseInt(process.env.TTS_MIN_INTERVAL_MS || '3200', 10);
+const MAX_SYNTH_RETRIES = parseInt(process.env.TTS_MAX_RETRIES || '4', 10);
+const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
+let _synthChain = Promise.resolve();
+let _lastSynthAt = 0;
+
 function ssmlEscape(s) {
   return String(s || '').replace(/[&<>"']/g, (c) => ({
     '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&apos;',
@@ -70,14 +80,45 @@ function speakSsml(ssml) {
       const chunks = [];
       res.on('data', (c) => chunks.push(c));
       res.on('end', () => {
-        if (res.statusCode >= 200 && res.statusCode < 300) resolve(Buffer.concat(chunks));
-        else reject(new Error(`tts HTTP ${res.statusCode} ${Buffer.concat(chunks).slice(0, 200).toString('utf8')}`));
+        if (res.statusCode >= 200 && res.statusCode < 300) return resolve(Buffer.concat(chunks));
+        const err = new Error(`tts HTTP ${res.statusCode} ${Buffer.concat(chunks).slice(0, 200).toString('utf8')}`);
+        err.status = res.statusCode;
+        const ra = parseInt(res.headers['retry-after'] || '', 10);
+        if (ra > 0) err.retryAfterMs = ra * 1000;
+        reject(err);
       });
     });
     req.on('error', reject);
     req.on('timeout', () => req.destroy(new Error('tts timeout')));
     req.write(data); req.end();
   });
+}
+
+// Retry a throttled (429) synth with exponential backoff, honouring Retry-After.
+async function speakWithRetry(ssml) {
+  for (let attempt = 0; ; attempt++) {
+    try {
+      return await speakSsml(ssml);
+    } catch (e) {
+      const throttled = e && (e.status === 429 || /\b429\b|quota|throttl/i.test(e.message || ''));
+      if (!throttled || attempt >= MAX_SYNTH_RETRIES) throw e;
+      const backoff = Math.max(e.retryAfterMs || 0, Math.min(20000, 3000 * Math.pow(2, attempt))) + Math.floor(Math.random() * 400);
+      await sleep(backoff);
+    }
+  }
+}
+
+// Serialise + pace synth calls across the whole process so non-cached bursts
+// stay under the F0 rate limit.
+function pacedSpeak(ssml) {
+  const run = _synthChain.then(async () => {
+    const wait = MIN_SYNTH_INTERVAL_MS - (Date.now() - _lastSynthAt);
+    if (wait > 0) await sleep(wait);
+    try { return await speakWithRetry(ssml); }
+    finally { _lastSynthAt = Date.now(); }
+  });
+  _synthChain = run.then(() => {}, () => {});
+  return run;
 }
 
 /**
@@ -95,7 +136,7 @@ async function speak(text, opts = {}) {
     return { audio: `/api/audio/${name}.mp3`, durationMs: durationFromBytes(info.size), bytes: info.size, voice, cached: true, name };
   }
 
-  const mp3 = await speakSsml(buildSsml(clean, voice, opts.rate));
+  const mp3 = await pacedSpeak(buildSsml(clean, voice, opts.rate));
   const url = await uploadAudio(name, mp3);
   return { audio: url, durationMs: durationFromBytes(mp3.length), bytes: mp3.length, voice, cached: false, name };
 }
