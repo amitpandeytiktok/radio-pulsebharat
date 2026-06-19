@@ -10,6 +10,8 @@
 // Env:
 //   NEWS_API       feed URL; default https://pulsebharat.com/api/news
 //   RADIO_STORIES  how many stories per program; default 28
+//   RADIO_MAX_NEW  max uncached synths per build; default 12
+//   RADIO_BUDGET_MS time budget per build; default 36000
 
 const store = require('./store');
 const tts = require('./tts');
@@ -120,7 +122,7 @@ function leadIn(story) {
 // and nothing is ever voiced twice.
 async function buildProgram(opts = {}) {
   const log = opts.log || (() => {});
-  const maxNew = Math.max(1, parseInt(opts.maxNew || process.env.RADIO_MAX_NEW || '14', 10));
+  const maxNew = Math.max(1, parseInt(opts.maxNew || process.env.RADIO_MAX_NEW || '12', 10));
   const budgetMs = Math.max(10000, parseInt(opts.budgetMs || process.env.RADIO_BUDGET_MS || '36000', 10));
   const started = Date.now();
   const overBudget = () => (Date.now() - started) > budgetMs;

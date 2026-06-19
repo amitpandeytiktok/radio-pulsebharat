@@ -47,5 +47,7 @@ Azure Static Web App **`radio-pulsebharat`** (Free, `lms-rg`), custom domain
 | `RADIO_VOICE` | Optional; default `hi-IN-MadhurNeural` |
 | `NEWS_API` | Optional; default `https://pulsebharat.com/api/news` |
 | `RADIO_STORIES` | Optional; stories per program (default 28) |
+| `RADIO_MAX_NEW` | Optional; max uncached synths per refresh (default 12) |
+| `RADIO_BUDGET_MS` | Optional; refresh build budget (default 36000) |
 
 Built on the same engine as TechWave Radio and The Mudda Radio.
