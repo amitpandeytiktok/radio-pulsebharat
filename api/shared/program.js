@@ -34,28 +34,52 @@ async function fetchFeed() {
   }
 }
 
-// Merge good/bad/ugly into one pool, keep cluster primaries, dedupe by link,
-// rank by how widely the event is covered and how fresh it is, take the top N.
+// The feed already carries the newsroom's own ranking (`rank` = how widely the
+// event is covered × how fresh it is, with gossip "masala" demoted) and a
+// `featured` hero — the exact ordering shown on pulsebharat.com. We mirror that
+// instead of re-sorting, so the radio plays the same top stories, in the same
+// order of importance, as the news page.
+function rankOf(s) {
+  if (typeof s.rank === 'number') return s.rank;
+  // Fallback if a story somehow lacks a server rank: recompute the site's formula.
+  const sc = s.sourceCount || 1;
+  const hoursOld = s.ts ? (Date.now() - s.ts) / 3600000 : 48;
+  return Math.log(1 + sc * 2.2) - Math.log(1 + hoursOld * 0.45) - (s.masala ? 10 : 0);
+}
+
+function storyKey(s) {
+  return s.link || s.slug || s.title || null;
+}
+
+// Lead with the page's featured hero, then order strictly by the feed's `rank`,
+// keeping only cluster primaries and dropping masala (the page buries it too).
 function selectStories(feed) {
   const pool = [];
+  if (feed.featured && feed.featured.title) {
+    pool.push({ ...feed.featured, cat: feed.featured.cat || 'good' });
+  }
   for (const cat of ['good', 'bad', 'ugly']) {
     for (const s of (feed[cat] || [])) {
       if (s && s.isPrimary === false) continue;
+      if (s && s.masala) continue;
       pool.push({ ...s, cat });
     }
   }
   const seen = new Set();
   const uniq = [];
   for (const s of pool) {
-    const k = s.link || s.slug || s.title;
+    const k = storyKey(s);
     if (!k || seen.has(k)) continue;
     seen.add(k);
     uniq.push(s);
   }
+  const featuredKey = feed.featured ? storyKey(feed.featured) : null;
   uniq.sort((a, b) => {
-    const sc = (b.sourceCount || 1) - (a.sourceCount || 1);
-    if (sc) return sc;
-    return (b.ts || 0) - (a.ts || 0);
+    if (featuredKey) {
+      if (storyKey(a) === featuredKey) return -1;
+      if (storyKey(b) === featuredKey) return 1;
+    }
+    return rankOf(b) - rankOf(a);
   });
   return uniq.slice(0, N_STORIES);
 }
